@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .completed-task {
+            text-decoration: line-through;
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+    <h1>Task List</h1>
+
+    <!-- タスク追加フォーム -->
+    <form id="taskForm">
+        {% csrf_token %}
+        <input type="text" name="title" id="taskTitle" placeholder="Add a new task">
+        <button type="submit">Add Task</button>
+    </form>
+
+    <ul id="taskList">
+        {% for task in tasks %}
+            <li>
+                <input type="checkbox" class="task-checkbox" data-id="{{ task.id }}" {% if task.completed %}checked{% endif %}>
+                <span class="task-title {% if task.completed %}completed-task{% endif %}">
+                    {{ task.title }}
+                </span>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        $(document).ready(function () {
+            // タスク追加
+            $('#taskForm').submit(function (event) {
+                event.preventDefault();
+                const taskTitle = $('#taskTitle').val();
+
+                $.ajax({
+                    url: "{% url 'add_task' %}",
+                    type: "POST",
+                    data: {
+                        'title': taskTitle,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function (response) {
+                        $('#taskList').append(`
+                            <li>
+                                <input type="checkbox" class="task-checkbox" data-id="${response.id}">
+                                <span class="task-title">${response.title}</span>
+                            </li>
+                        `);
+                        $('#taskTitle').val('');
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                    }
+                });
+            });
+
+            // タスクの完了状態変更
+            $('#taskList').on('change', '.task-checkbox', function () {
+                const taskId = $(this).data('id');
+                const isCompleted = $(this).is(':checked');
+                const taskTitle = $(this).siblings('.task-title');
+
+                $.ajax({
+                    url: "{% url 'update_task' %}",
+                    type: "POST",
+                    data: {
+                        'id': taskId,
+                        'completed': isCompleted,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function (response) {
+                        if (response.completed) {
+                            taskTitle.addClass('completed-task');
+                        } else {
+                            taskTitle.removeClass('completed-task');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
