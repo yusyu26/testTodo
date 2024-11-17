@@ -77,10 +77,22 @@ WSGI_APPLICATION = 'testTodoproject.wsgi.application'
 
 import dj_database_url
 
-DATABASES = {
-    'default': dj_database_url.config(default='postgres://localhost')
-}
-
+# Heroku環境かどうかをチェックして、データベース設定を切り替える
+if 'DATABASE_URL' in os.environ:
+    DATABASES = {
+        'default': dj_database_url.config()
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'yuki_db_name',
+            'USER': 'yuki_db_user',
+            'PASSWORD': 'yuki_db_password',
+            'HOST': 'localhost',
+            'PORT': '5432',
+        }
+    }
 
 
 # Password validation
